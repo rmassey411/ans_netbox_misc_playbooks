@@ -1,0 +1,31 @@
+---
+- name: Create virtual machine in netbox
+  hosts: all
+  connection: local
+  gather_facts: no
+  
+  # Not needed here because it's imported using requirements file
+  # collections:
+  #   - netbox.netbox
+
+  # Needs to ingest/replace vars from/with values from vault
+  # vars:
+  #   - app_url: ""
+  #   - app_token: ""
+
+  tasks:
+    - name: Create vm
+      netbox.netbox.netbox_virtual_machine:
+        netbox_url: "{{ app_url }}"
+        netbox_token: "{{ app_token }}"
+        data:
+          name: "myappsrv1"
+          vcpus: "2"
+          memory: "8"
+          disk: "75"
+        state: present
+        validate_certs: no
+
+    - name: print a message
+      ansible.builtin.debug:
+        msg: "Hello World!"

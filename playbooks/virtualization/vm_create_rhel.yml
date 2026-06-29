@@ -1,0 +1,32 @@
+---
+- name: Netbox API call
+  hosts: all
+  connection: local
+  gather_facts: no
+  
+  # Not needed here because it's imported using requirements file
+  # collections:
+  #   - netbox.netbox
+
+  # Needs to ingest/replace vars from/with values from vault
+  # vars:
+  #   - app_url: ""
+  #   - app_token: ""
+
+  tasks:
+    - netbox.netbox.netbox_virtual_machine:
+        netbox_url: "{{ app_url }}"
+        netbox_token: "{{ app_token }}"
+        data:
+          name: "{{ input_fqdn | split('.') | first }}"
+          vcpus: "{{ input_cpu }}"
+          memory: "{{ input_mem }}"
+          # disk: "75"
+          platform: "RedHat Enterprise Linux {{ input_os | split('_') | last }}"
+          tags:
+            - "platform_type_linux"
+          custom_fields:
+            cf_FOAPAL: "{{ input_foapal }}"
+            cf_LifecycleEnvironment: "{{ input_lifecycleenv }}"
+        state: present
+        validate_certs: no

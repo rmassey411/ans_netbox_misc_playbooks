@@ -1,0 +1,4 @@
+---
+#hc_id:
+#host_id:
+org_id: {{ organization_data.json.results|map(attribute='id') }}

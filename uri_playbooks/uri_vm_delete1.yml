@@ -1,0 +1,54 @@
+---
+- name: Delete VM in Netbox
+  hosts: all
+  connection: local
+  gather_facts: no
+  
+  vars:
+    netbox_url: "https://your-netbox-instance"
+    netbox_token: "your_api_token"
+    vm_name: "your_virtual_machine_name"
+
+  tasks:
+    # - name: Include Netbox role for tasks
+    #   ansible.builtin.include_role:
+    #     name: ans_netbox_misc_role
+    #     tasks_from: virtualization/vm_delete_uri.yml
+    #   vars:
+    #     server_fqdn: "{{ vm_name }}.tu.temple.edu"
+
+    - name: Search for the virtual machine by name
+      ansible.builtin.uri:
+        url: "{{ netbox_url }}/api/virtualization/virtual-machines/?name={{ server_fqdn | split('.') | first}}"
+        method: GET
+        headers:
+          Authorization: "Token {{ netbox_token }}"
+          Content-Type: "application/json"
+          Accept: "application/json"
+        return_content: yes
+      register: search_result
+
+    - name: Delete the virtual machine if it exists
+      ansible.builtin.uri:
+        url: "{{ netbox_url }}/api/virtualization/virtual-machines/{{ item.id }}/"
+        method: DELETE
+        headers:
+          Authorization: "Token {{ netbox_token }}"
+          Content-Type: "application/json"
+          Accept: "application/json"
+        status_code: 204
+      loop: "{{ search_result.json.results }}"
+      when: search_result.json.count > 0
+      register: delete_result
+
+    - name: Print deletion result
+      ansible.builtin.debug:
+        msg: "{{ delete_result }}"
+      # loop: "{{ delete_result.results }}"
+      # when: item.status == 204
+
+    # - name: Print deletion result
+    #   debug:
+    #     msg: "Deleted virtual machine with ID {{ item.id }}"
+    #   loop: "{{ delete_result.results }}"
+    #   when: item.status == 204

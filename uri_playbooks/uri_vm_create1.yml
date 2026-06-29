@@ -1,0 +1,66 @@
+---
+- name: Create VM in Netbox
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  
+  # vars:
+  #   name: "MightMatt"
+  #   status: "active"
+  #   site: "Bell Building ( TECH CENTER )"
+  #   #cluster: "Main Campus / Production"
+  #   site: 4
+  #   cluster: 7
+  #   role: 2
+  #   platform: ""
+  #   tags: ""
+  #   custom_fileds: ""
+
+
+  tasks:
+    - name: Create virtual machine
+      ansible.builtin.uri:
+        url: "{{ netbox_url }}/api/virtualization/virtual-machines/"
+        method: POST
+        headers:
+          Content-Type: 'application/json'
+          Authorization: "Token {{ netbox_token }}"
+        validate_certs: false
+        body_format: json
+        body: 
+          name: "supermatt"
+          status: offline
+          site: 4
+          cluster: 7
+          platform: 4
+          # region: 5
+          # device: 11
+          # role: 5
+          # tenant: 1
+          # memory: 2147483647
+          # disk: 1
+          # primary_ip4: 1
+          # primary_ip6: 1
+          # description: "string"
+          # comments: "string"
+          # local_context_data: {}
+          custom_fields: {
+            FOAPAL: "27",
+            Owner: "Joe Biden",
+          #   is_Appliance: false,
+          #   is_BackedUp: true,
+          #   is_Managed_ITS_IOS: true,
+          #   is_Patched: true,
+          #   adminEmail_App: null,
+          #   adminZenoss_App: null,
+          #   adminOncall_App: null,
+          #   adminRemedy_App: null,
+          #   adminEmail_OS: null,
+          #   adminOncall_OS: null,
+          #   adminRemedy_OS: null,
+          }
+        return_content: true
+      delegate_to: localhost
+      register: netbox_vm
+
+

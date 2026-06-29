@@ -1,0 +1,138 @@
+---
+#Sat api approach
+- name: Patching Audit
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  vars_files:
+    - ../vars/uri_patching_satellite_hostcollections.yml
+  
+  
+  vars: 
+    host_name: "Patch_{{ lookup('pipe', 'date +%Y-%m-%d') |string }}"
+    org_name: "CS"
+    host_list: "{{ netbox_vms.json.results|map(attribute='name') | list | lower }}"
+    satellite_url: "{{ web_url }}"
+    satellite_username: "{{ web_username }}"
+    satellite_password: "{{ web_userpass }}"
+    org_id: "{{ organization_data.json.results|map(attribute='id') | string}}" #stores as [#] need to remove brackets
+    hc_id: "{{ hc_info.json.results|map(attribute='id') }}"
+
+
+
+  tasks:  
+          
+    - name: Print generated host collection name
+      ansible.builtin.debug: #test getting current date & time
+        msg: "{{ host_name }}"
+
+    - name: Create Host Collection #Includes role to get org id and create host collection
+      include_role:
+        name: ans_satellite_create_hostcollection_role
+      vars:
+        satellite_url: "{{ web_url }}"
+        satellite_username: "{{ web_username }}"
+        satellite_password: "{{ web_userpass }}"
+        org_search: "name = {{ org_name }}"
+        hc_name: "{{ host_name }}"
+        hc_desc: "placeholder"
+    
+    - name: Get Host Collection ID
+      uri:
+        url: "{{ satellite_url }}/katello/api/host_collections" 
+        url_username: "{{ satellite_username }}"
+        url_password: "{{ satellite_password }}"
+        force_basic_auth: yes
+        validate_certs: false
+        method: GET
+        body_format: json
+        headers:
+          Content-Type: 'application/json'
+        body:
+          { "search":  "name = {{ host_name }}" }
+      register: hc_info
+      delegate_to: localhost
+      vars:
+        satellite_url: "{{ web_url }}"
+        satellite_username: "{{ web_username }}"
+        satellite_password: "{{ web_userpass }}"
+
+    # #- name: Print Host Collection ID 
+    # #  ansible.builtin.debug:
+    # #    msg: "{{ hc_info.json.results|map(attribute='id') }}"
+
+    - name: Get Host list from Netbox 
+      uri:
+        url: "{{ netbox_url }}/api/virtualization/virtual-machines/?limit=0&cf_is_Patched=True"
+        validate_certs: false
+        method: GET
+        body_format: json
+        headers:
+          Content-Type: 'application/json'
+          Authorization: "Token {{ netbox_token }}"
+      register: netbox_vms
+    
+    #- name: Print org id 
+    #  ansible.builtin.debug:
+    #    msg: "{{ org_id | regex_search('[0-9]+') }}"
+
+    
+    - name: Get Host IDs 
+      uri:
+        url: "{{ satellite_url }}/api/organizations/{{ org_id | regex_search('[0-9]+') }}/hosts" 
+        url_username: "{{ satellite_username }}"
+        url_password: "{{ satellite_password }}"
+        force_basic_auth: yes
+        validate_certs: false
+        method: GET
+        body_format: json
+        headers:
+          Content-Type: 'application/json'
+        body:
+          { "search": "name = {{ item }}", 
+              
+          }
+      loop: "{{ host_list }}"
+      register: host_id
+      delegate_to: localhost
+
+    #- name: Print host ID #these hosts aren't on satellite at the moment, 2 options: add them to satellite or run a test with a server that is on satellite
+    #  ansible.builtin.debug:
+    #    msg: "{{ host_id.json.results|map(attribute='id') }}"
+
+
+
+    - name: Add Host to Host Collection #replace with add host to host collection role
+      uri:
+        url: "{{ satellite_url }}/api/hosts/bulk/add_host_collections" 
+        url_username: "{{ satellite_username }}"
+        url_password: "{{ satellite_password }}"
+        force_basic_auth: yes
+        validate_certs: false
+        method: PUT
+        body_format: json
+        headers:
+          Content-Type: 'application/json'
+        body:
+          "{ 'organization_id': {{ org_id }}, 
+            'host_collection_ids': [{{ hc_id }}],
+            'included': { 'ids': [{{ host_id.json.results|map(attribute='id')  }}] },
+            'excluded': { 'ids': [] }
+            }" 
+      delegate_to: localhost
+      vars:
+        satellite_url: "{{ web_url }}"
+        satellite_username: "{{ web_username }}"
+        satellite_password: "{{ web_userpass }}"
+        hc_id: "{{ hc_info.json.results|map(attribute='id') }}"
+
+#- name: Run patching job template against host collection
+
+
+
+
+
+
+
+
+

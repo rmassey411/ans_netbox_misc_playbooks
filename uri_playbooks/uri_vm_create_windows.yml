@@ -1,0 +1,132 @@
+---
+- name: Create Windows VM in Netbox
+  hosts: all
+  gather_facts: no
+  
+  vars: 
+    foapal: "100000-77110-06" 
+    lifecycle_env: "PRODUCTION" 
+    input_vmname: "somename"
+    input_os_image: "Windows Server 2025"
+    input_hardware_config: "Small"
+    platform_map: {}
+  #   status: "active"
+  #   site: "Bell Building ( TECH CENTER )"
+  #   #cluster: "Main Campus / Production"
+  #   site: 4
+  #   cluster: 7
+  #   role: 2
+  #   tags: ""
+  #   custom_fileds: ""
+    # Large: "8 cpu and 16 GB Memory"
+    # Meduim: "4 cpu and 8 GB Memory"
+    # Small: "2 cpu and 4 GB Memory"
+
+  tasks:
+    - name: Get Platform
+      ansible.builtin.uri:
+        url: "{{ netbox_url }}/api/dcim/platforms/"
+        method: GET
+        headers:
+          Content-Type: 'application/json'
+          Authorization: "Token {{ netbox_token }}"
+        validate_certs: false
+      delegate_to: localhost
+      register: netbox_platforms
+    
+    - name: Map platforms to id
+      set_fact:
+        platform_map: "{{ platform_map | combine({ item['name']: item['id'] }) }}"
+      with_items: "{{ netbox_platforms['json']['results'] }}"
+
+    - name: Set cpu on T-shirt size
+      set_fact:
+        cpu: >-
+          {%- if input_hardware_config is match("Small") -%}
+            2
+          {%- elif input_hardware_config is match("Meduim") -%}
+            4
+          {%- elif input_hardware_config is match("Large") -%}
+            8
+          {%- else -%}
+            unknown_host
+          {%- endif -%}
+    - name: Set memory on T-shirt size
+      set_fact:
+        memory: >-
+          {%- if input_hardware_config is match("Small") -%}
+            4096
+          {%- elif input_hardware_config is match("Meduim") -%}
+            8192
+          {%- elif input_hardware_config is match("Large") -%}
+            16384
+          {%- else -%}
+            unknown_host
+          {%- endif -%}
+    - name: Set OS on T-shirt size
+      set_fact:
+        platform: >-
+          {%- if input_os_image is match("Windows Server 2019") -%}
+            {{ platform_map['Windows 2019']}}
+          {%- elif input_os_image is match("Windows Server 2022") -%}
+            {{ platform_map['Windows 2022']}}
+          {%- elif input_os_image is match("Windows Server 2025") -%}
+            {{ platform_map['Windows 2025']}}
+          {%- else -%}
+            {{ platform_map['Unknown'] }}
+          {%- endif -%}                
+ 
+    - name: Create virtual machine
+      ansible.builtin.uri:
+        url: "{{ netbox_url }}/api/virtualization/virtual-machines/"
+        method: POST
+        headers:
+          Content-Type: 'application/json'
+          Authorization: "Token {{ netbox_token }}"
+        validate_certs: false
+        body_format: json
+        body: 
+          name: "{{ input_vmname }}"
+          status: active
+          site: 4
+          cluster: 7
+          platform: "{{ platform }}"
+          # region: 5
+          # device: 11
+          # role: 5
+          # tenant: 1
+          vcpus:  "{{ cpu }}"
+          memory: "{{ memory }}"
+          # disk: 1
+          # primary_ip4: 1
+          # primary_ip6: 1
+          # description: "string"
+          # comments: "string"
+          # local_context_data: {}
+          tags: [
+            {
+              name: "Platform_Type_Windows",
+              slug: "platform_type_windows",
+            }
+          ]
+          custom_fields: {
+            FOAPAL: "{{ foapal }}",
+            LifecycleEnvironment: "{{ lifecycle_env | upper }}",
+          #   is_Appliance: false,
+          #   is_BackedUp: true,
+          #   is_Managed_ITS_IOS: true,
+          #   is_Patched: true,
+          #   adminEmail_App: null,
+          #   adminZenoss_App: null,
+          #   adminOncall_App: null,
+          #   adminRemedy_App: null,
+          #   adminEmail_OS: null,
+          #   adminOncall_OS: null,
+          #   adminRemedy_OS: null,
+          }
+        return_content: true
+        status_code: 201
+      delegate_to: localhost
+      register: netbox_vm
+
+

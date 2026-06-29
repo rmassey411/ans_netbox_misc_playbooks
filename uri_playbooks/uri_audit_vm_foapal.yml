@@ -1,0 +1,48 @@
+---
+- name: Netbox API call
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  
+
+  tasks:
+    - name: Get Virtual Machine Info
+      uri:
+        url: "{{ web_url }}/api/virtualization/virtual-machines"
+        validate_certs: false
+        method: GET
+        body_format: json
+        headers:
+          Content-Type: 'application/json'
+          Authorization: "Token {{ web_token }}"
+      delegate_to: localhost
+      register: vm_info
+
+
+    # - name: Print Virtual Machine Info
+    #   ansible.builtin.debug:
+    #     msg: "{{ vm_info.json.results }}"
+
+
+    # - name: Print "names" from Virtual Machine Info
+    #   ansible.builtin.debug:
+    #     msg: "Server name is: {{ item.name }} with a FOAPAL of {{ item.custom_fields.FOAPAL }}"
+    #   with_items: "{{ vm_info.json.results }}"
+
+
+
+    - name: Print "names" from Virtual Machine Info
+      ansible.builtin.debug:
+        msg: "Create a Missing FOAPAL ticket for {{ item.name }}"
+      with_items: "{{ vm_info.json.results }}"
+      when: item.custom_fields.FOAPAL == None
+
+
+    # Uncomment below when we know we have the foapals assigned to most of the VMs
+    # - name: Include role to create ticket
+    #   include_role:
+    #     name: ans_remedy_create_incident_role
+    #   vars:
+    #     remedy_summary: "Missing FOAPAL for {{ item.name }}"
+    #     remedy_workinfo: "Please find the FOAPAL for {{ item.name }} and assign it in the inventory system." 
+    #   when: item.custom_fields.FOAPAL == None

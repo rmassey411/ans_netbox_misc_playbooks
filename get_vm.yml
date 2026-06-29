@@ -1,0 +1,38 @@
+---
+- name: Get device listing
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  
+  # Not needed here because it's imported using requirements file
+  # collections:
+  #   - netbox.netbox
+
+  # Needs to ingest/replace vars from/with values from vault
+  # vars:
+  #   - app_url: ""
+  #   - app_token: ""
+
+  tasks:
+  # query a list of devices
+  - name: Obtain list of devices from NetBox
+    ansible.builtin.debug:
+      msg: >
+        "Device {{ item.value.display_name }} (ID: {{ item.key }}) was
+         manufactured by {{ item.value.device_type.manufacturer.name }}"
+    loop: "{{ query('netbox.netbox.nb_lookup', 'devices') }}"
+
+    # - netbox.netbox.netbox_virtual_machine:
+    #     netbox_url: "{{ app_url }}"
+    #     netbox_token: "{{ app_token }}"
+    #     data:
+    #       name: "np-lum5devadmin1.erp.temple.edu"
+    #       vcpus: "2"
+    #       memory: "8"
+    #       disk: "75"
+    #     state: present
+    #     validate_certs: no
+
+    # - name: print a message
+    #   ansible.builtin.debug:
+    #     msg: "Hello World!"

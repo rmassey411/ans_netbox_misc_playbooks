@@ -1,0 +1,67 @@
+---
+- name: Create VM in Netbox
+  hosts: all
+  gather_facts: no
+  
+  # vars:
+  #   name: "MightMatt"
+  #   status: "active"
+  #   site: "Bell Building ( TECH CENTER )"
+  #   #cluster: "Main Campus / Production"
+  #   site: 4
+  #   cluster: 7
+  #   role: 2
+  #   platform: ""
+  #   tags: ""
+  #   custom_fileds: ""
+
+
+  tasks:
+    - name: Create virtual machine
+      uri:
+        url: "{{ netbox_url }}/api/virtualization/virtual-machines/"
+        method: POST
+        headers:
+          Content-Type: 'application/json'
+          Authorization: "Token {{ netbox_token }}"
+        validate_certs: false
+        body_format: json
+        body: 
+          name: "{{ server_fqdn | split('.') | first }}"
+          status: active
+          site: 4
+          cluster: 7
+          # platform: 4
+          # region: 5
+          # device: 11
+          # role: 5
+          # tenant: 1
+          vcpus: "{{ cpu }}"
+          memory: "{{ memory }}"
+          # disk: 1
+          # primary_ip4: 1
+          # primary_ip6: 1
+          # description: "string"
+          # comments: "string"
+          # local_context_data: {}
+          custom_fields: {
+            FOAPAL: "{{ foapal }}",
+            LifecycleEnvironment: "{{ lifecycle_env | upper }}",
+          #   is_Appliance: false,
+          #   is_BackedUp: true,
+          #   is_Managed_ITS_IOS: true,
+          #   is_Patched: true,
+          #   adminEmail_App: null,
+          #   adminZenoss_App: null,
+          #   adminOncall_App: null,
+          #   adminRemedy_App: null,
+          #   adminEmail_OS: null,
+          #   adminOncall_OS: null,
+          #   adminRemedy_OS: null,
+          }
+        return_content: true
+        status_code: 201
+      delegate_to: localhost
+      register: netbox_vm
+
+

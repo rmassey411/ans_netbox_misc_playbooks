@@ -1,0 +1,20 @@
+---
+
+- name: Bulk delete a list of VMs
+  hosts: localhost
+  gather_facts: no
+  vars: 
+    id_list: ["Item1", "Item2", "Item3"]
+
+  tasks: 
+    - name: Delete servers based off Netbox ID
+      ansible.builtin.uri:
+        url: "{{ netbox_url }}/api/virtualization/virtual-machines/{{ item }}/"
+        method: DELETE
+        headers:
+          Content-Type: 'application/json'
+          Authorization: "Token {{ netbox_token }}"
+        validate_certs: false
+        return_content: true
+        status_code: 204
+      with_items: "{{ id_list }}"

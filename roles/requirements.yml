@@ -1,0 +1,3 @@
+---
+# netbox uri tasks
+- src: git+https://github.com/rmassey411/ans_netbox_misc_role.git

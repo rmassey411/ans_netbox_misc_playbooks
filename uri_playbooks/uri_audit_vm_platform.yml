@@ -1,0 +1,24 @@
+---
+- name: Netbox API call
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  
+
+  tasks:
+    - name: Get Virtual Machine Info
+      uri:
+        url: "{{ web_url }}/api/virtualization/virtual-machines"
+        validate_certs: false
+        method: GET
+        body_format: json
+        headers:
+          Content-Type: 'application/json'
+          Authorization: "Token {{ web_token }}"
+      delegate_to: localhost
+      register: vm_info
+
+    # - name: Print Virtual Machine Info
+    #   ansible.builtin.debug:
+    #     msg: "{{ vm_info.json.results }}"
+

@@ -1,0 +1,30 @@
+- name: Create a virtual machine in NetBox
+  hosts: localhost
+  gather_facts: no
+
+  vars:
+    netbox_url: "https://your-netbox-instance/api/"
+    netbox_token: "your_api_token"
+    vm_name: "your_virtual_machine_name"
+    platform_name: "your_platform_name"
+    site_name: "your_site_name"
+    cluster_name: "your_cluster_name"
+    tags: ["tag1", "tag2"]
+    custom_fields: 
+      custom_field_1: "value1"
+      custom_field_2: "value2"
+
+  tasks:
+    - name: Include Netbox role for tasks
+      ansible.builtin.include_role:
+        name: ans_netbox_misc_role
+        tasks_from: virtualization/vm_create_uri2.yml
+      vars:
+        server_fqdn: "{{ vm_name }}.techwecan.net"
+        platform_name: "your_platform_name"
+        site_name: "your_site_name"
+        cluster_name: "your_cluster_name"
+        tags: ["tag1", "tag2"]
+        custom_fields: 
+          custom_field_1: "value1"
+          custom_field_2: "value2"

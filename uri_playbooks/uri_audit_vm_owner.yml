@@ -1,0 +1,29 @@
+---
+- name: Netbox API call
+  hosts: localhost
+  connection: local
+  gather_facts: no
+  
+
+  tasks:
+    - name: Get Virtual Machine Info
+      uri:
+        url: "{{ web_url }}/api/virtualization/virtual-machines"
+        validate_certs: false
+        method: GET
+        body_format: json
+        headers:
+          Content-Type: 'application/json'
+          Authorization: "Token {{ web_token }}"
+      delegate_to: localhost
+      register: vm_info
+
+    - name: Include role to create ticket
+      include_role:
+        name: ans_remedy_create_incident_role
+      vars:
+        remedy_summary: "Missing Owner for {{ item.name }}"
+        remedy_workinfo: "Please find the Owner for {{ item.name }} and assign it in the inventory system." 
+      with_items: "{{ vm_info.json.results }}"
+      when: item.custom_fields.Owner != None
+

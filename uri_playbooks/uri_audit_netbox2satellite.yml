@@ -1,0 +1,57 @@
+---
+- name: Netbox API call
+  hosts: localhost
+  connection: local
+  gather_facts: no
+
+  vars:
+    org_id: "{{ organization_data.json.results|map(attribute='id') | string}}"
+    satellite_url: "{{ web_url }}"
+    satellite_username: "{{ web_username }}" 
+    satellite_password: "{{ web_userpass }}"
+
+  tasks:
+    - name: Get list of virtual machines from Netbox
+      uri:
+        url: "{{ netbox_url }}/api/virtualization/virtual-machines/?limit=0"
+        validate_certs: false
+        method: GET
+        body_format: json
+        headers:
+          Content-Type: 'application/json'
+          Authorization: "Token {{ netbox_token }}"
+      register: netbox_vms
+
+    
+    - name: Get list of servers from satellite
+      include_role: 
+        name: ans_satellite_gethosts_role
+      vars:
+        satellite_url: "{{ web_url }}"
+        satellite_username: "{{ web_username }}"
+        satellite_password: "{{ web_userpass }}"
+
+    - name: Show satellite servers that are missing in netbox
+      ansible.builtin.debug:
+        msg: "{{ item }} is missing in netbox"
+      with_items: "{{(host_info.hosts | map(attribute='name') | map('split', '.') | map('first') | list | difference(netbox_vms.json.results|map(attribute='name')|list)) | lower}}"
+
+    # - name: Show netbox servers that are missing in Satellite
+    #   ansible.builtin.debug:
+    #     msg: "{{ item }} is missing in satellite" 
+    #   with_items: "{{(netbox_vms.json.results|map(attribute='name')|list | difference(host_info.hosts | map(attribute='name') | map('split', '.') | map('first') | list )) | lower}}"   
+
+
+    
+
+
+    
+
+      
+
+    
+         
+    
+    
+
+
